@@ -7,6 +7,9 @@
 
 #include <std_msgs/msg/int32.h>
 
+
+#define PIN_OPTO_S_DO   26
+
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
@@ -29,18 +32,6 @@ long i = 0;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST,TFT_MISO);
 int sensor_tick = 100;
-
-Encoder encoder1 = Encoder(27, 26, 30);
-Encoder encoder2 = Encoder(35, 34, 30);
-Encoder encoder3 = Encoder(25, 33, 30);
-
-// interrupt routine intialisation
-void doA1(){encoder1.handleA();}
-void doB1(){encoder1.handleB();}
-void doA2(){encoder2.handleA();}
-void doB2(){encoder2.handleB();}
-void doA3(){encoder3.handleA();}
-void doB3(){encoder3.handleB();}
 
 int dataSens1[350];
 int dataSens2[350];
@@ -116,24 +107,24 @@ void testFastLines(uint16_t color1, uint16_t color2) {
 
 void taskSensor1(void *parameter){
   for(;;){
-    dataSens1[i] = encoder1.getAngle()+3;
-    dataSens2[i] = encoder2.getAngle()+3;
-    dataSens3[i] = encoder3.getAngle()+3;
-    if (i >= 320){
-      dataSens1[0] = dataSens1[320];
-      dataSens2[0] = dataSens2[320];
-      dataSens3[0] = dataSens3[320];
-      i = 0;
-    }
-    if (i > 0){
-      tft.drawFastHLine(0,i+59,240,ILI9341_BLACK);
-      tft.drawLine(dataSens1[i-1], i-1+60,dataSens1[i], i+60,ILI9341_WHITE);
-      tft.drawLine(dataSens2[i-1], i-1+60,dataSens2[i], i+60,ILI9341_RED);
-      tft.drawLine(dataSens3[i-1], i-1+60,dataSens3[i], i+60,ILI9341_BLUE);
-    }
-    Serial.println("Speed : "+String(dataSens1[i]));
-    vTaskDelay(10/portTICK_PERIOD_MS);
-    ++i;
+    // dataSens1[i] = encoder1.getAngle()+3;
+    // dataSens2[i] = encoder2.getAngle()+3;
+    // dataSens3[i] = encoder3.getAngle()+3;
+    // if (i >= 320){
+    //   dataSens1[0] = dataSens1[320];
+    //   dataSens2[0] = dataSens2[320];
+    //   dataSens3[0] = dataSens3[320];
+    //   i = 0;
+    // }
+    // if (i > 0){
+    //   tft.drawFastHLine(0,i+59,240,ILI9341_BLACK);
+    //   tft.drawLine(dataSens1[i-1], i-1+60,dataSens1[i], i+60,ILI9341_WHITE);
+    //   tft.drawLine(dataSens2[i-1], i-1+60,dataSens2[i], i+60,ILI9341_RED);
+    //   tft.drawLine(dataSens3[i-1], i-1+60,dataSens3[i], i+60,ILI9341_BLUE);
+    // }
+    // Serial.println("Speed : "+String(dataSens1[i]));
+    // vTaskDelay(10/portTICK_PERIOD_MS);
+    // ++i;
   }
 }
 void taskDisplay(void *parameter)
@@ -147,20 +138,14 @@ void taskDisplay(void *parameter)
     vTaskDelete(taskDisplayHandle);
   }
 }
+
+int hitung;
+void IRAM_ATTR count()
+{
+  hitung = hitung + 1;
+}
 void setup() {
   Serial.begin(115200);
-  encoder1.quadrature = Quadrature::OFF;
-  encoder2.quadrature = Quadrature::OFF;
-  encoder3.quadrature = Quadrature::OFF;
-  encoder1.pullup = Pullup::USE_INTERN;
-  encoder2.pullup = Pullup::USE_INTERN;
-  encoder3.pullup = Pullup::USE_INTERN;
-  encoder1.init();
-  encoder2.init();
-  encoder3.init();
-  encoder1.enableInterrupts(doA1, doB1);  
-  encoder2.enableInterrupts(doA2, doB2);  
-  encoder3.enableInterrupts(doA3, doB3);
 /*
   // set_microros_serial_transports(serial);
   IPAddress agent_ip(192,168,1,15);
@@ -200,9 +185,13 @@ void setup() {
 
   msg.data = 0;
 */
-  xTaskCreate(taskDisplay, "task Display", 4000, NULL, 1, &taskDisplayHandle);
+  pinMode(PIN_OPTO_S_DO, INPUT);
+  attachInterrupt(PIN_OPTO_S_DO, count, RISING);
+  // xTaskCreate(taskDisplay, "task Display", 4000, NULL, 1, &taskDisplayHandle);
+
 }
 void loop(void) {
-  // delay(100);
+  Serial.println(hitung);
+  delay(1000);
   // RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
 }
